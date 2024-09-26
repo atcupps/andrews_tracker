@@ -1,0 +1,30 @@
+name: Automatic Data Scraping
+
+on:
+    workflow_dispatch:
+    schedule:
+        - cron: '5,35 * * * *'
+
+jobs:
+    run-scraper:
+        runs-on: ubuntu-latest
+
+        steps:
+            -   name: Checkout code
+                uses: actions/checkout@v4
+                with:
+                    ref: main
+                
+            -   name: Setup Python
+                uses: actions/setup-python@v5
+                with:
+                    python-version: '3.11'
+            
+            -   name: Run scraper
+                env:
+                    SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+                    SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+                run: |
+                    python3 -m pip install --upgrade pip
+                    python3 -m pip install bs4
+                    python3 -m pip install supabase
