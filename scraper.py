@@ -50,7 +50,8 @@ while l < length:
                 section_id = section.find('input', {'name' : 'sectionId'})['value']
                 open_seats = int(section.find('span', class_='open-seats-count').get_text())
                 total_seats = int(section.find('span', class_='total-seats-count').get_text())
-                seat_info[(course_id, section_id)] = (open_seats, total_seats)
+                waitlist = int(section.find('span', class_='waitlist-count').get_text())
+                seat_info[(course_id, section_id)] = (open_seats, total_seats, waitlist)
 
     l = r
     r = min(r + chunk_size, length)
@@ -65,12 +66,13 @@ print('Rows deleted.')
 print('Creating bulk data array for upload to database.')
 full_data = []
 for (course, section) in seat_info:
-    (current, max) = seat_info[(course, section)]
+    (current, max, waitlist) = seat_info[(course, section)]
     full_data.append({
         'course_id': course,
         'section_id': section,
         'current_seats': current,
-        'max_seats': max
+        'max_seats': max,
+        'waitlist': waitlist
     })
 
 print('Uploading all data to database.')
