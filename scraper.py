@@ -6,7 +6,7 @@ from supabase import create_client, Client
 # Data used in this script
 url = os.environ['SUPABASE_URL']
 key = os.environ['SUPABASE_KEY']
-term = '202501'
+term = '202508'
 
 # Supabase client
 supabase: Client = create_client(url, key)
