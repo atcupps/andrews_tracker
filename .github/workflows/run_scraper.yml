@@ -31,5 +31,8 @@ jobs:
                 env:
                     SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
                     SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+                    HANDLER_EMAIL: ${{ secrets.HANDLER_EMAIL }}
+                    HANDLER_PASSWORD: ${{ secrets.HANDLER_PASSWORD }}
+                    DEST_EMAIL: ${{ secrets.DEST_EMAIL }}
                 run: |
                     python3 scraper.py
