@@ -13,8 +13,14 @@ term = '202508'
 err_handler = Handler()
 
 # Supabase client
-supabase: Client = create_client(url, key)
-print('Created Supabase client.')
+try:
+    supabase: Client = create_client(url, key)
+    print('Successfully created Supabase client.')
+except Exception as e:
+    print('Failed to create Supabase client.')
+    err_handler.error_supabase(e)
+    err_handler.send_email()
+    exit(1)
 
 # Download course code list file from Supabase and save locally
 bucket_name = 'class_list'
@@ -41,9 +47,11 @@ Get list of courses from Jupiterp GitHub. Returns courses as an array of strings
 '''
 def retrieve_all_courses(attempts):
     print(f'Sending request to GitHub for course list file download.')
-    response_text = attempt_request('https://raw.githubusercontent.com/atcupps/Jupiterp/main/datagen/data/courses_list.txt', attempts)
+    request = 'https://raw.githubusercontent.com/atcupps/Jupiterp/main/datagen/data/courses_list.txt'
+    response_text = attempt_request(request, attempts)
     if response_text == None:
         print('Failed to get courses.')
+        err_handler.error_request_failed(request)
         return None
     else:
         course_list = response_text.split('\n')[0:-1]
@@ -59,6 +67,7 @@ def retrieve_testudo_page(courses, attempts):
     response_text = attempt_request(testudo_url, attempts)
     if response_text == None:
         print(f'Failed to get Testudo page for URL: {testudo_url}')
+        err_handler.error_request_failed(testudo_url)
         return None
     else:
         print('Successfully retrieved Testudo SOC page.')
@@ -70,6 +79,7 @@ def retrieve_testudo_page(courses, attempts):
 course_codes = retrieve_all_courses(3)
 if course_codes == None:
     print('Failed to retrieve courses.')
+    err_handler.send_email()
     exit(1)
 
 length = len(course_codes)
@@ -101,8 +111,6 @@ while l < length:
                     seat_info[(course_id, section_id)] = (open_seats, total_seats, waitlist)
     else:
         print(f'Failed to get page for {len(codes_for_url)} courses')
-        for course_id in codes_for_url:
-            err_handler.add_failed_course(course_id)
 
     l = r
     r = min(r + chunk_size, length)
@@ -127,6 +135,10 @@ for (course, section) in seat_info:
     })
 
 print('Uploading all data to database.')
-supabase.table('seats').insert(full_data).execute()
+try:
+    supabase.table('seats').insert(full_data).execute()
+except Exception as e:
+    print('Failed to upload to database.')
+    err_handler.error_supabase(e)
 
 err_handler.send_email()
