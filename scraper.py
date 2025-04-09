@@ -3,6 +3,7 @@ import os
 import requests
 from supabase import create_client, Client
 from handler import Handler
+import time
 
 # Data used in this script
 url = os.environ['SUPABASE_URL']
@@ -88,6 +89,9 @@ l = 0
 r = chunk_size
 seat_info = dict()
 while l < length:
+    # Wait 1 second so I don't get in trouble for spamming Testudo
+    time.sleep(1)
+
     # Get Testudo SOC page for this chunk of courses
     codes_for_url = course_codes[l:r]
     html = retrieve_testudo_page(codes_for_url, 3)
