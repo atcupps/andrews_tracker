@@ -20,30 +20,70 @@ print('Created Supabase client.')
 bucket_name = 'class_list'
 file_path = 'courses_list.txt'
 
-print('Sending request to GitHub for course list file download.')
-course_list = requests.get("https://raw.githubusercontent.com/atcupps/Jupiterp/main/datagen/data/courses_list.txt").text
-print('Courses downloaded successfully.')
+'''
+Try `num_attempts` times to send a request; returns response text if
+successful, or `None` if the response failed. Assumes `num_attempts > 0`.
+'''
+def attempt_request(url, num_attempts):
+    print(f'Attempting request: {num_attempts} remaining attempts')
+    response = requests.get(url)
+    if response.ok:
+        return response.text
+    else:
+        if num_attempts - 1 > 0:
+            return attempt_request(url, num_attempts - 1)
+        else:
+            print('Failed to get valid response for request.')
+            return None
+
+'''
+Get list of courses from Jupiterp GitHub. Returns courses as an array of strings.
+'''
+def retrieve_all_courses(attempts):
+    print(f'Sending request to GitHub for course list file download.')
+    response_text = attempt_request('https://raw.githubusercontent.com/atcupps/Jupiterp/main/datagen/data/courses_list.txt', attempts)
+    if response_text == None:
+        print('Failed to get courses.')
+        return None
+    else:
+        course_list = response_text.split('\n')[0:-1]
+        print(f'Successfully retrieved {len(course_list)} courses.')
+        return course_list
+
+'''
+Get Testudo SOC page for a list of courses.
+'''
+def retrieve_testudo_page(courses, attempts):
+    print(f'Sending request to Testudo Schedule of Classes.')
+    testudo_url = f'https://app.testudo.umd.edu/soc/{term}/sections?courseIds=' + ','.join(courses)
+    response_text = attempt_request(testudo_url, attempts)
+    if response_text == None:
+        print(f'Failed to get Testudo page for URL: {testudo_url}')
+        return None
+    else:
+        print('Successfully retrieved Testudo SOC page.')
+        return response_text
 
 # Split response into chunks, send request to Testudo, and collect section
 # seat information in a dictionary with the following form:
 # { (course_code, section_code) : (current_seats, total_seats) }
-course_codes = course_list.split('\n')[0:-1]
+course_codes = retrieve_all_courses(3)
+if course_codes == None:
+    print('Failed to retrieve courses.')
+    exit(1)
+
 length = len(course_codes)
 chunk_size = int(length / 50)
 l = 0
 r = chunk_size
 seat_info = dict()
 while l < length:
+    # Get Testudo SOC page for this chunk of courses
     codes_for_url = course_codes[l:r]
+    html = retrieve_testudo_page(codes_for_url, 3)
 
-    print(f'Getting Testudo sections page for {len(codes_for_url)} courses: {codes_for_url[0]} to {codes_for_url[-1]}')
-    testudo_url = f'https://app.testudo.umd.edu/soc/{term}/sections?courseIds=' + ','.join(codes_for_url)
-    print(testudo_url)
-    response = requests.get(testudo_url)
-
-    if response.ok:
+    if html != None:
         print('Testudo page successfully retreived. Beginning parsing')
-        html = response.text
         soup = BeautifulSoup(html, 'html.parser')
         
         for course_id in codes_for_url:
