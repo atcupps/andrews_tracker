@@ -8,7 +8,7 @@ import time
 # Data used in this script
 url = os.environ['SUPABASE_URL']
 key = os.environ['SUPABASE_KEY']
-term = '202508'
+term = '202601'
 
 # Error handling
 err_handler = Handler()
